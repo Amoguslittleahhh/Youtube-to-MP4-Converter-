@@ -1,0 +1,76 @@
+name: YTMP4
+options:
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+packages:
+  Core:
+    path: Core
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    DEAD_CODE_STRIPPING: YES
+targets:
+  YTMP4:
+    type: application
+    platform: iOS
+    sources: [App, Shared]
+    dependencies:
+      - package: Core
+      - target: ShareExtension
+    entitlements:
+      path: App/App.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)io.github.amoguslittleahhh.ytmp4.shared"]
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: YT to MP4
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        NSPhotoLibraryAddUsageDescription: Saves your downloaded videos to Photos.
+        KeychainGroup: $(AppIdentifierPrefix)io.github.amoguslittleahhh.ytmp4.shared
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        CFBundleURLTypes:
+          - CFBundleURLName: io.github.amoguslittleahhh.ytmp4
+            CFBundleURLSchemes: [ytmp4]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.amoguslittleahhh.ytmp4
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+  ShareExtension:
+    type: app-extension
+    platform: iOS
+    sources: [ShareExtension, Shared]
+    dependencies:
+      - package: Core
+    entitlements:
+      path: ShareExtension/ShareExtension.entitlements
+      properties:
+        keychain-access-groups: ["$(AppIdentifierPrefix)io.github.amoguslittleahhh.ytmp4.shared"]
+    info:
+      path: ShareExtension/Info.plist
+      properties:
+        CFBundleDisplayName: YT to MP4
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSPhotoLibraryAddUsageDescription: Saves your downloaded videos to Photos.
+        KeychainGroup: $(AppIdentifierPrefix)io.github.amoguslittleahhh.ytmp4.shared
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.amoguslittleahhh.ytmp4.share

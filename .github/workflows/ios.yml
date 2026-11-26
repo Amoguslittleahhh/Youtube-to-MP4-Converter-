@@ -1,0 +1,65 @@
+name: iOS
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # fastlane match stores the encrypted signing files on the `signing` branch
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      RELEASE: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode 26
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Install XcodeGen
+        run: command -v xcodegen || brew install xcodegen
+
+      - name: Core tests (extractor, muxer, solver, transcoder)
+        run: swift test --package-path Core
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Compile check (unsigned)
+        if: env.RELEASE != 'true' || env.ASC_KEY_ID == ''
+        run: |
+          set -o pipefail
+          xcodebuild -project YTMP4.xcodeproj -scheme YTMP4 -configuration Release \
+            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build | tail -n 40
+
+      - name: Missing App Store Connect secrets
+        if: env.RELEASE == 'true' && env.ASC_KEY_ID == ''
+        run: echo "::warning::Build OK. Add ASC_KEY_ID, ASC_ISSUER_ID and ASC_KEY_P8 repository secrets to upload to TestFlight (see README)."
+
+      - uses: ruby/setup-ruby@v1
+        if: env.RELEASE == 'true' && env.ASC_KEY_ID != ''
+        with:
+          ruby-version: "3.3"
+          bundler-cache: true
+
+      - name: Build & upload to TestFlight
+        if: env.RELEASE == 'true' && env.ASC_KEY_ID != ''
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          bundle exec fastlane beta

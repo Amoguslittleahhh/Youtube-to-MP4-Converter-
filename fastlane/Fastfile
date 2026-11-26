@@ -1,0 +1,74 @@
+require "base64"
+require "digest"
+
+default_platform(:ios)
+
+APP_ID = "io.github.amoguslittleahhh.ytmp4"
+EXT_ID = "#{APP_ID}.share"
+
+platform :ios do
+  desc "Build and upload to TestFlight (runs on GitHub Actions)"
+  lane :beta do
+    setup_ci
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8").strip,
+      duration: 1200
+    )
+
+    # 1. Register the app + share extension IDs (idempotent).
+    { APP_ID => "YT to MP4", EXT_ID => "YT to MP4 Share" }.each do |id, name|
+      next if Spaceship::ConnectAPI::BundleId.find(id)
+      UI.message("Registering bundle ID #{id}")
+      Spaceship::ConnectAPI::BundleId.create(name: name, platform: "IOS", identifier: id)
+    end
+
+    # 2. The App Store Connect app record can only be created on the website.
+    unless Spaceship::ConnectAPI::App.find(APP_ID)
+      UI.user_error!(<<~MSG)
+        ONE-TIME STEP: create the app in App Store Connect, then run this workflow again.
+        appstoreconnect.apple.com → Apps → + → New App
+          Platform: iOS · Name: anything unique (e.g. "YT to MP4 #{rand(1000..9999)}") · Language: English
+          Bundle ID: #{APP_ID} · SKU: ytmp4 · User Access: Full Access
+      MSG
+    end
+
+    # 3. Signing: certificate + profiles, stored encrypted on this repo's `signing` branch.
+    #    The encryption password is derived from the (secret) API key, so there is nothing extra to set up.
+    ENV["MATCH_PASSWORD"] = Digest::SHA256.hexdigest(ENV.fetch("ASC_KEY_P8").strip)
+    match(
+      type: "appstore",
+      app_identifier: [APP_ID, EXT_ID],
+      api_key: api_key,
+      storage_mode: "git",
+      git_url: "https://github.com/#{ENV.fetch('GITHUB_REPOSITORY')}.git",
+      git_branch: "signing",
+      git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('GITHUB_TOKEN')}"),
+      readonly: false
+    )
+    team_id = ENV.fetch("sigh_#{APP_ID}_appstore_team-id")
+    profiles = [APP_ID, EXT_ID].to_h { |id| [id, ENV.fetch("sigh_#{id}_appstore_profile-name")] }
+
+    { "YTMP4" => APP_ID, "ShareExtension" => EXT_ID }.each do |target, id|
+      update_code_signing_settings(
+        path: "YTMP4.xcodeproj", targets: [target], use_automatic_signing: false,
+        team_id: team_id, code_sign_identity: "Apple Distribution",
+        bundle_identifier: id, profile_name: profiles[id]
+      )
+    end
+
+    # 4. Build (build number = workflow run number) and upload.
+    build_app(
+      project: "YTMP4.xcodeproj",
+      scheme: "YTMP4",
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: { provisioningProfiles: profiles },
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')}",
+      output_directory: "build"
+    )
+    upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
+    UI.success("Uploaded! It appears in the TestFlight app after Apple finishes processing (usually 5–30 min).")
+  end
+end
