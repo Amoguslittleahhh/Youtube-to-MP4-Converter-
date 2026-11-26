@@ -5,7 +5,7 @@
   python3 ~/Documents/bin/ytmp4.py "<link>" best|1080|720
 
 Downloads with yt-dlp on the phone, merges to a faststart MP4 (H.264 + AAC where YouTube has it),
-writes ytmp4/latest.mp4 + ytmp4/info.json next to the Shortcuts folder, then opens the
+writes ytmp4/<video title>.mp4 next to the Shortcuts folder, then opens the
 "YT to MP4" shortcut again (input "ytmp4-save"), which converts 4K AV1 to H.264 with Apple's Encode Media and saves it.
 """
 import json
@@ -20,7 +20,7 @@ import urllib.request
 
 REPO_RAW = "https://raw.githubusercontent.com/Amoguslittleahhh/Youtube-to-MP4-Converter-/main/ashell/ytmp4.py"
 SHORTCUT = "YT to MP4"
-SAVE_SIGNAL = "ytmp4-save"   # the shortcut sees this as its input and runs its "save" half
+SAVE_KEY = "ytmp4-save"   # the shortcut sees this in its input and runs its "save" half
 UPDATE_EVERY = 7 * 24 * 3600
 HOME_DOCS = os.path.expanduser("~/Documents")
 BIN = os.path.join(HOME_DOCS, "bin")
@@ -175,11 +175,12 @@ def download(link, quality):
     import yt_dlp
 
     out = out_dir()
-    for name in ("latest.mp4", "info.json"):
-        try:
-            os.remove(os.path.join(out, name))
-        except OSError:
-            pass
+    for name in os.listdir(out):              # previous video was already saved by the shortcut
+        if name.endswith((".mp4", ".part", ".ts")) or name.startswith("download."):
+            try:
+                os.remove(os.path.join(out, name))
+            except OSError:
+                pass
     opts = {"noplaylist": True, "quiet": False}
     cookies = os.path.join(STATE, "cookies.txt")
     if os.path.exists(cookies):
@@ -226,18 +227,20 @@ def download(link, quality):
     if not produced:
         print("Nothing was downloaded.")
         return 1
-    finalize(produced[0], os.path.join(out, "latest.mp4"))
+    name = re.sub(r'[\\/:*?"<>|\n\r]+', " ", title).strip()[:80] or "video"
+    finalize(produced[0], os.path.join(out, name + ".mp4"))
     for p in produced[1:]:
         try:
             os.remove(p)
         except OSError:
             pass
 
-    safe = re.sub(r'[\\/:*?"<>|\n\r]+', " ", title).strip()[:80] or "video"
-    with open(os.path.join(out, "info.json"), "w", encoding="utf-8") as fh:
-        json.dump({"title": safe, "convert": "yes" if convert else "no"}, fh, ensure_ascii=False)
-    print("\nDone — back to Shortcuts to save it…")
-    run(["open", "shortcuts://run-shortcut?name=" + urllib.parse.quote(SHORTCUT) + "&input=text&text=" + SAVE_SIGNAL])
+    # Everything the shortcut needs travels in its input, so it doesn't have to read any other file.
+    signal = json.dumps({SAVE_KEY: "1", "file": f"ytmp4/{name}.mp4", "name": name,
+                         "convert": "yes" if convert else "no"}, ensure_ascii=False)
+    print(f"\nDone: {name}.mp4 — back to Shortcuts to save it…")
+    run(["open", "shortcuts://run-shortcut?name=" + urllib.parse.quote(SHORTCUT)
+         + "&input=text&text=" + urllib.parse.quote(signal, safe="")])
     return 0
 
 
@@ -248,9 +251,10 @@ def main(argv):
     if not argv:
         print(__doc__)
         return 1
-    rest = " ".join(argv[1:])     # menu label from Shortcuts, e.g. "1080p"
-    quality = "1080" if "1080" in rest else "720" if "720" in rest else "best"
-    return download(argv[0], quality)
+    text = " ".join(argv)          # shared link + quality label from Shortcuts, e.g. "… 1080p"
+    label = argv[-1] if len(argv) > 1 else ""
+    quality = "1080" if "1080" in label else "720" if "720" in label else "best"
+    return download(text, quality)
 
 
 if __name__ == "__main__":

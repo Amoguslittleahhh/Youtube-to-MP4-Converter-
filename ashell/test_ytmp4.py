@@ -7,6 +7,7 @@ import tempfile
 import time
 import types
 import unittest
+import urllib.parse
 
 sys.path.insert(0, os.path.dirname(__file__))
 import ytmp4  # noqa: E402
@@ -114,20 +115,30 @@ class DownloadFlowTests(unittest.TestCase):
         sys.modules["yt_dlp"] = types.SimpleNamespace(YoutubeDL=FakeYDL)
         self.addCleanup(sys.modules.pop, "yt_dlp", None)
 
+    def signal(self):
+        url = [c for c in self.calls if c[0] == "open"][-1][1]
+        self.assertTrue(url.startswith("shortcuts://run-shortcut?name=YT%20to%20MP4&input=text&text="))
+        return json.loads(urllib.parse.unquote(url.split("&text=", 1)[1]))
+
     def test_best_flow(self):
-        self.assertEqual(ytmp4.main(["https://youtu.be/dQw4w9WgXcQ", "Best (up to 4K)"]), 0)
+        self.assertEqual(ytmp4.main(["https://youtu.be/dQw4w9WgXcQ", "Best", "(up", "to", "4K)"]), 0)
         out = os.path.join(self.tmp, "ytmp4")
-        self.assertEqual(sorted(os.listdir(out)), ["info.json", "latest.mp4"])
-        with open(os.path.join(out, "info.json")) as fh:
-            self.assertEqual(json.load(fh), {"title": "My  Video  part 1 2", "convert": "yes"})
+        self.assertEqual(sorted(os.listdir(out)), ["My  Video  part 1 2.mp4"])          # named after the video
+        self.assertEqual(self.signal(), {"ytmp4-save": "1", "file": "ytmp4/My  Video  part 1 2.mp4",
+                                         "name": "My  Video  part 1 2", "convert": "yes"})
         self.assertEqual(self.ydl_opts[1]["format"], "401+140")
         self.assertEqual(self.ydl_opts[1]["merge_output_format"], "mp4")
         self.assertNotIn("cookiefile", self.ydl_opts[0])
-        self.assertIn(["open", "shortcuts://run-shortcut?name=YT%20to%20MP4&input=text&text=ytmp4-save"], self.calls)
         if shutil.which("ffmpeg"):
-            with open(os.path.join(out, "latest.mp4"), "rb") as fh:
-                head = fh.read(64)
-            self.assertIn(b"moov", head[:64] + open(os.path.join(out, "latest.mp4"), "rb").read(4096))  # faststart
+            with open(os.path.join(out, "My  Video  part 1 2.mp4"), "rb") as fh:
+                self.assertIn(b"moov", fh.read(4096))                                   # faststart
+
+    def test_previous_download_is_cleared(self):
+        out = os.path.join(self.tmp, "ytmp4")
+        os.makedirs(out, exist_ok=True)
+        open(os.path.join(out, "Old video.mp4"), "w").close()
+        ytmp4.main(["https://youtu.be/dQw4w9WgXcQ", "720p"])
+        self.assertNotIn("Old video.mp4", os.listdir(out))
 
     def test_1080_with_cookies(self):
         with open(os.path.join(ytmp4.STATE, "cookies.txt"), "w") as fh:
@@ -135,8 +146,7 @@ class DownloadFlowTests(unittest.TestCase):
         self.assertEqual(ytmp4.main(["https://youtu.be/dQw4w9WgXcQ", "1080p"]), 0)
         self.assertEqual(self.ydl_opts[1]["format"], "299+140")
         self.assertTrue(self.ydl_opts[0]["cookiefile"].endswith("cookies.txt"))
-        with open(os.path.join(self.tmp, "ytmp4", "info.json")) as fh:
-            self.assertEqual(json.load(fh)["convert"], "no")
+        self.assertEqual(self.signal()["convert"], "no")
 
     def test_bad_link(self):
         self.assertEqual(ytmp4.main(["https://example.com/x", "best"]), 1)

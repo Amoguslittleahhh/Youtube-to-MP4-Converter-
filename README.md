@@ -28,47 +28,42 @@ The download runs on your own iPhone using [yt-dlp](https://github.com/yt-dlp/yt
 
    It installs yt-dlp and ends with **All set!** plus a "files go to:" line. Keep that screen in mind.
 
-### 2. Build the shortcut (one time)
+### 2. Build the shortcut (one time, about 5 minutes)
 
-One shortcut does everything. It runs once from the share sheet to start the download. When a-Shell finishes, a-Shell opens it again with the word `ytmp4-save` so it can save the file.
+Open **Shortcuts** → **+**. Name it exactly **YT to MP4**. Then tap **ⓘ** (Details) and turn on **Show in Share Sheet**.
 
-Open **Shortcuts** → **+**. Name it exactly **YT to MP4**.
+Add these actions in order. Words in *italics* are variables you pick from the bar above the keyboard.
 
-1. Tap **ⓘ** (Details) and turn on **Show in Share Sheet**.
-   - Back in the editor, the top line says *Receive **Any** input from Share Sheet*. Tap **Any** and keep only **URLs**, **Text** and **Safari web pages**.
-   - Set *If there's no input* to **Get Clipboard**.
-2. Add **If**: *Shortcut Input* **contains** `ytmp4-save`.
+| # | Action | Set it to |
+|---|---|---|
+| 1 | **If** | *Shortcut Input* **contains** `ytmp4-save` |
+| 2 | ↳ **Get Dictionary from Input** | *Shortcut Input* |
+| 3 | ↳ a-Shell **Get File** | *Dictionary* → key `file` (tap the variable → *Get Value for Key*). Turn on **as a copy** if shown. |
+| 4 | ↳ **If** | *Dictionary* → key `convert` **is** `yes` |
+| 5 | ↳↳ **Encode Media** | *File*, then *Show More* → **Size 3840×2160** (not HEVC) |
+| 6 | ↳↳ **Set Name** | *Encoded Media* → *Dictionary* key `name` followed by `.mp4` |
+| 7 | ↳ **Otherwise** → **Get Variable** | *File* |
+| 8 | ↳ **End If** → **Share** | *If Result* |
+| 9 | **Otherwise** → **List** | `Best (up to 4K)`, `1080p`, `720p` |
+| 10 | ↳ **Choose from List** | *List* |
+| 11 | ↳ **Text** | `python3 ~/Documents/bin/ytmp4.py "`*Shortcut Input*`" `*Chosen Item* |
+| 12 | ↳ **URL Encode** | *Text* |
+| 13 | ↳ **Open URLs** | `ashell://`*URL Encoded Text* |
+| 14 | **End If** | |
 
-**Inside If (the save half):**
+Here's what each half does:
+- **Otherwise half (steps 9–13):** runs when you share a video. It asks for the quality and starts the download in a-Shell.
+- **If half (steps 2–8):** runs when a-Shell reopens the shortcut after the download. It converts 4K to H.264 if needed, then opens the iPhone **Share** menu. From there tap **Save Video** (Photos), **Save to Files**, or **WhatsApp**.
 
-3. Add a-Shell's **Get File** with path `ytmp4/info.json`. If there's an **as a copy** option, turn it on.
-4. Add **Get Dictionary from Input**.
-5. Add a-Shell's **Get File** with path `ytmp4/latest.mp4`, **as a copy** on.
-6. Add another **If**: *Dictionary* → key `convert` (tap the variable, choose *Get Value for Key*) **is** `yes`.
-   - Inside it, add **Encode Media** on the *File* from step 5. Tap *Show More* → **Size: 3840×2160** (not HEVC). This turns YouTube's 4K AV1 into H.264 4K.
-   - In its **Otherwise**, add **Get Variable** → the *File* from step 5.
-7. After that inner **End If**, add **Set Name**: *If Result* → name = *Dictionary* key `title` followed by `.mp4`.
-8. Add **Choose from Menu** with the prompt `Save to`:
-   - **Photos** → **Save to Photo Album** (*Renamed Item*)
-   - **Files** → **Save File** (*Renamed Item*, turn on *Ask Where to Save*)
-   - **Share** → **Share** (*Renamed Item*). Use this to send it straight to WhatsApp.
+The file is named after the video's title.
 
-**In the outer Otherwise (the start half):**
+**Optional:** delete steps 9–10 and the *Chosen Item* in step 11 to always get the best quality with no question asked.
 
-9. Add **Get URLs from Input** (input: *Shortcut Input*).
-10. Add **Choose from Menu**. Set the prompt to `Quality` and the items to `Best (up to 4K)`, `1080p` and `720p`. Under each item add a **Text** action containing the item's name.
-11. Add **Text** and type exactly the following. Insert `URLs` and `Menu Result` from the variable bar; keep the quotes around URLs.
-    ```
-    python3 ~/Documents/bin/ytmp4.py "URLs" Menu Result
-    ```
-12. Add **URL Encode** (in the *Encode/Decode URL* action), set to Encode, on that Text.
-13. Add **Open URLs** with the text `ashell://` followed by the *URL Encoded Text* variable.
+If Get File can't find the file, check the "files go to:" line from setup. The `file` value is relative to that folder.
 
-If Get File says it can't find the file, put in the full path from the "files go to:" line that setup printed, with `/latest.mp4` or `/info.json` added.
+### 3. Use it
 
-### 4. Use it
-
-YouTube or Safari → **Share** → **YT to MP4** → pick a quality. a-Shell opens and shows the download. When it finishes, the shortcut opens again by itself. 4K takes a minute or two to convert; then pick **Photos**, **Files** or **Share**.
+YouTube or Safari → **Share** → **YT to MP4** → pick a quality. a-Shell opens and shows the download. When it finishes, the shortcut opens again by itself, converts 4K if needed (a minute or two), and shows the Share menu: **Save Video**, **Save to Files** or **WhatsApp**. Files are named after the video.
 
 If **YT to MP4** isn't in the share sheet, scroll the apps row to **More** → **Edit** and add it to Favourites.
 
