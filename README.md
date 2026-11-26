@@ -14,7 +14,7 @@ There are two ways to use it:
 
 ## Free: App Store only
 
-The download runs on your own iPhone using [yt-dlp](https://github.com/yt-dlp/yt-dlp) inside **a-Shell**, a free, open-source terminal app. Apple's **Shortcuts** app adds it to the share sheet, and Apple's own video encoder converts 4K.
+The download runs on your own iPhone using [yt-dlp](https://github.com/yt-dlp/yt-dlp) inside **a-Shell**, a free, open-source terminal app. One Apple **Shortcuts** shortcut adds it to the share sheet, and Apple's own video encoder converts 4K.
 
 ### 1. Install (2 minutes)
 
@@ -28,41 +28,47 @@ The download runs on your own iPhone using [yt-dlp](https://github.com/yt-dlp/yt
 
    It installs yt-dlp and ends with **All set!** plus a "files go to:" line. Keep that screen in mind.
 
-### 2. Shortcut 1: "YT to MP4" (the share-sheet button)
+### 2. Build the shortcut (one time)
 
-Open **Shortcuts** → **+** (new shortcut). Name it **YT to MP4**. Then:
+One shortcut does everything. It runs once from the share sheet to start the download. When a-Shell finishes, a-Shell opens it again with the word `ytmp4-save` so it can save the file.
 
-1. Tap the **ⓘ** (Details) button and turn on **Show in Share Sheet**. Back in the editor, the top line says *Receive **Any** input from Share Sheet*. Tap **Any** and keep only **URLs**, **Text** and **Safari web pages**. Set *If there's no input* to **Get Clipboard**.
-2. Add **Get URLs from Input** (input: *Shortcut Input*).
-3. Add **Choose from Menu**. Set the prompt to `Quality` and the items to `Best (up to 4K)`, `1080p` and `720p`. Under each item add a **Text** action containing the item's name.
-4. Add **Text** and type exactly the following. Insert `URLs` and `Menu Result` from the variable bar; keep the quotes around URLs.
-   ```
-   python3 ~/Documents/bin/ytmp4.py "URLs" Menu Result
-   ```
-5. Add **URL Encode** (in the *Encode/Decode URL* action), set to Encode, on the Text from step 4.
-6. Add **Open URLs** with the text `ashell://` followed by the *URL Encoded Text* variable.
+Open **Shortcuts** → **+**. Name it exactly **YT to MP4**.
 
-### 3. Shortcut 2: "YT Save" (converts and saves when the download finishes)
+1. Tap **ⓘ** (Details) and turn on **Show in Share Sheet**.
+   - Back in the editor, the top line says *Receive **Any** input from Share Sheet*. Tap **Any** and keep only **URLs**, **Text** and **Safari web pages**.
+   - Set *If there's no input* to **Get Clipboard**.
+2. Add **If**: *Shortcut Input* **contains** `ytmp4-save`.
 
-New shortcut. It must be named exactly **YT Save**. Then:
+**Inside If (the save half):**
 
-1. Add a-Shell's **Get File** with path `ytmp4/info.json`. If there's an **as a copy** option, turn it on.
-2. Add **Get Dictionary from Input**.
-3. Add a-Shell's **Get File** with path `ytmp4/latest.mp4`, **as a copy** on.
-4. Add **If**: *Dictionary* → key `convert` (tap the variable, choose *Get Value for Key*) **is** `yes`.
-   - Inside **If**: add **Encode Media** on the *File* from step 3. Tap *Show More* → **Size: 3840×2160** (not HEVC). This turns YouTube's 4K AV1 into H.264 4K.
-   - Inside **Otherwise**: add **Get Variable** → the *File* from step 3.
-5. After **End If**, add **Set Name**: *If Result* → name = *Dictionary* key `title` followed by `.mp4`.
-6. Add **Choose from Menu** with the prompt `Save to`:
+3. Add a-Shell's **Get File** with path `ytmp4/info.json`. If there's an **as a copy** option, turn it on.
+4. Add **Get Dictionary from Input**.
+5. Add a-Shell's **Get File** with path `ytmp4/latest.mp4`, **as a copy** on.
+6. Add another **If**: *Dictionary* → key `convert` (tap the variable, choose *Get Value for Key*) **is** `yes`.
+   - Inside it, add **Encode Media** on the *File* from step 5. Tap *Show More* → **Size: 3840×2160** (not HEVC). This turns YouTube's 4K AV1 into H.264 4K.
+   - In its **Otherwise**, add **Get Variable** → the *File* from step 5.
+7. After that inner **End If**, add **Set Name**: *If Result* → name = *Dictionary* key `title` followed by `.mp4`.
+8. Add **Choose from Menu** with the prompt `Save to`:
    - **Photos** → **Save to Photo Album** (*Renamed Item*)
    - **Files** → **Save File** (*Renamed Item*, turn on *Ask Where to Save*)
    - **Share** → **Share** (*Renamed Item*). Use this to send it straight to WhatsApp.
+
+**In the outer Otherwise (the start half):**
+
+9. Add **Get URLs from Input** (input: *Shortcut Input*).
+10. Add **Choose from Menu**. Set the prompt to `Quality` and the items to `Best (up to 4K)`, `1080p` and `720p`. Under each item add a **Text** action containing the item's name.
+11. Add **Text** and type exactly the following. Insert `URLs` and `Menu Result` from the variable bar; keep the quotes around URLs.
+    ```
+    python3 ~/Documents/bin/ytmp4.py "URLs" Menu Result
+    ```
+12. Add **URL Encode** (in the *Encode/Decode URL* action), set to Encode, on that Text.
+13. Add **Open URLs** with the text `ashell://` followed by the *URL Encoded Text* variable.
 
 If Get File says it can't find the file, put in the full path from the "files go to:" line that setup printed, with `/latest.mp4` or `/info.json` added.
 
 ### 4. Use it
 
-YouTube or Safari → **Share** → **YT to MP4** → pick a quality. a-Shell opens and shows the download. When it finishes, **YT Save** opens by itself. 4K takes a minute or two to convert; then pick **Photos**, **Files** or **Share**.
+YouTube or Safari → **Share** → **YT to MP4** → pick a quality. a-Shell opens and shows the download. When it finishes, the shortcut opens again by itself. 4K takes a minute or two to convert; then pick **Photos**, **Files** or **Share**.
 
 If **YT to MP4** isn't in the share sheet, scroll the apps row to **More** → **Edit** and add it to Favourites.
 
@@ -76,7 +82,7 @@ If **YT to MP4** isn't in the share sheet, scroll the apps row to **More** → *
 
 ### Limits of the free route
 
-- You build the two shortcuts by hand once. Apple only accepts ready-made shortcut files that were signed on a Mac.
+- You build the shortcut by hand once. Apple only accepts ready-made shortcut files that were signed on a Mac.
 - a-Shell comes to the screen while it downloads, so keep it open for long videos.
 - 4K conversion uses Apple's **Encode Media**, which needs a phone that can play AV1. A 15 Pro Max can.
 

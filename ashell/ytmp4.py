@@ -6,7 +6,7 @@
 
 Downloads with yt-dlp on the phone, merges to a faststart MP4 (H.264 + AAC where YouTube has it),
 writes ytmp4/latest.mp4 + ytmp4/info.json next to the Shortcuts folder, then opens the
-"YT Save" shortcut, which converts 4K AV1 to H.264 with Apple's Encode Media and saves it.
+"YT to MP4" shortcut again (input "ytmp4-save"), which converts 4K AV1 to H.264 with Apple's Encode Media and saves it.
 """
 import json
 import os
@@ -19,7 +19,8 @@ import urllib.parse
 import urllib.request
 
 REPO_RAW = "https://raw.githubusercontent.com/Amoguslittleahhh/Youtube-to-MP4-Converter-/main/ashell/ytmp4.py"
-SAVE_SHORTCUT = "YT Save"
+SHORTCUT = "YT to MP4"
+SAVE_SIGNAL = "ytmp4-save"   # the shortcut sees this as its input and runs its "save" half
 UPDATE_EVERY = 7 * 24 * 3600
 HOME_DOCS = os.path.expanduser("~/Documents")
 BIN = os.path.join(HOME_DOCS, "bin")
@@ -235,8 +236,8 @@ def download(link, quality):
     safe = re.sub(r'[\\/:*?"<>|\n\r]+', " ", title).strip()[:80] or "video"
     with open(os.path.join(out, "info.json"), "w", encoding="utf-8") as fh:
         json.dump({"title": safe, "convert": "yes" if convert else "no"}, fh, ensure_ascii=False)
-    print("\nDone — opening the YT Save shortcut…")
-    run(["open", "shortcuts://run-shortcut?name=" + urllib.parse.quote(SAVE_SHORTCUT)])
+    print("\nDone — back to Shortcuts to save it…")
+    run(["open", "shortcuts://run-shortcut?name=" + urllib.parse.quote(SHORTCUT) + "&input=text&text=" + SAVE_SIGNAL])
     return 0
 
 

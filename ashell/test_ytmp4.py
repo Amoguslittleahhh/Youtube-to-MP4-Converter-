@@ -123,7 +123,7 @@ class DownloadFlowTests(unittest.TestCase):
         self.assertEqual(self.ydl_opts[1]["format"], "401+140")
         self.assertEqual(self.ydl_opts[1]["merge_output_format"], "mp4")
         self.assertNotIn("cookiefile", self.ydl_opts[0])
-        self.assertIn(["open", "shortcuts://run-shortcut?name=YT%20Save"], self.calls)
+        self.assertIn(["open", "shortcuts://run-shortcut?name=YT%20to%20MP4&input=text&text=ytmp4-save"], self.calls)
         if shutil.which("ffmpeg"):
             with open(os.path.join(out, "latest.mp4"), "rb") as fh:
                 head = fh.read(64)
