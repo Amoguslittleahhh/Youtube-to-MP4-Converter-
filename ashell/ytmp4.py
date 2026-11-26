@@ -133,7 +133,7 @@ def setup():
     f = run(["ffmpeg", "-hide_banner", "-version"])
     print("  ffmpeg:", (f.stdout.splitlines() or ["MISSING"])[0])
     print("  files go to:", out_dir())
-    print("\nAll set! Now build the two shortcuts (see the README)." if ok and v.returncode == 0 and f.returncode == 0
+    print("\nAll set! Now build the "YT to MP4" shortcut (see the README)." if ok and v.returncode == 0 and f.returncode == 0
           else "\nSomething is missing — copy this screen and send it to whoever set this up.")
 
 
