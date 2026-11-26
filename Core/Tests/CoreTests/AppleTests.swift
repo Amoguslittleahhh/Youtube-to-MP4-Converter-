@@ -42,8 +42,10 @@ final class AppleTests: XCTestCase {
         XCTAssertEqual(video.count, 1); XCTAssertEqual(audio.count, 1)
         let codec = try await video[0].load(.formatDescriptions).first.map(CMFormatDescriptionGetMediaSubType)
         XCTAssertEqual(codec, kCMVideoCodecType_H264)
-        XCTAssertEqual(try await video[0].load(.naturalSize), CGSize(width: 320, height: 240))
-        XCTAssertEqual(try await asset.load(.duration).seconds, 3.0, accuracy: 0.2)
+        let size = try await video[0].load(.naturalSize)
+        let duration = try await asset.load(.duration).seconds
+        XCTAssertEqual(size, CGSize(width: 320, height: 240))
+        XCTAssertEqual(duration, 3.0, accuracy: 0.2)
     }
 
     /// AVFoundation itself must accept our muxer's output (what Photos and WhatsApp use).
@@ -51,8 +53,10 @@ final class AppleTests: XCTestCase {
         let out = FileManager.default.temporaryDirectory.appendingPathComponent("av-\(UUID().uuidString).mp4")
         try FragmentedMP4.mux(video: fixture("v264_bdo.mp4"), audio: fixture("a_aac.mp4"), to: out)
         let asset = AVURLAsset(url: out)
-        XCTAssertTrue(try await asset.load(.isPlayable))
-        XCTAssertEqual(try await asset.load(.duration).seconds, 3.0, accuracy: 0.1)
+        let playable = try await asset.load(.isPlayable)
+        let duration = try await asset.load(.duration).seconds
+        XCTAssertTrue(playable)
+        XCTAssertEqual(duration, 3.0, accuracy: 0.1)
         let reader = try AVAssetReader(asset: asset)
         let track = try await asset.loadTracks(withMediaType: .video)[0]
         let output = AVAssetReaderTrackOutput(track: track, outputSettings: [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange])

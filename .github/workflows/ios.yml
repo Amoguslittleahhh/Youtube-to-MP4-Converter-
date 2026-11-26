@@ -23,7 +23,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       RELEASE: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Select Xcode 26
         run: |
