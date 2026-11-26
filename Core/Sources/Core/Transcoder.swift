@@ -77,16 +77,16 @@ public enum Transcoder {
                              cancelled: StopFlag, onTime: ((Double) -> Void)?) async {
         let queue = DispatchQueue(label: "transcode.\(label)")
         await withCheckedContinuation { (done: CheckedContinuation<Void, Never>) in
-            var finished = false
+            let finished = StopFlag()
             input.requestMediaDataWhenReady(on: queue) {
-                guard !finished else { return }
+                guard !finished.isStopped else { return }
                 while input.isReadyForMoreMediaData {
-                    if cancelled.isStopped { finished = true; input.markAsFinished(); done.resume(); return }
+                    if cancelled.isStopped { finished.stop(); input.markAsFinished(); done.resume(); return }
                     guard let buffer = output.copyNextSampleBuffer() else {
-                        finished = true; input.markAsFinished(); done.resume(); return
+                        finished.stop(); input.markAsFinished(); done.resume(); return
                     }
                     if !input.append(buffer) {
-                        finished = true; done.resume(); return
+                        finished.stop(); done.resume(); return
                     }
                     onTime?(CMSampleBufferGetPresentationTimeStamp(buffer).seconds)
                 }
