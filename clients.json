@@ -1,0 +1,46 @@
+{
+  "anonymousClients": [
+    "visionos",
+    "tv_samsung",
+    "ios_producer"
+  ],
+  "signedInClients": [
+    "tv_samsung"
+  ],
+  "playerJSVariant": "tv-player-ias.vflset/tv-player-ias.js",
+  "clients": {
+    "visionos": {
+      "clientName": "VISIONOS",
+      "clientVersion": "1.02",
+      "clientId": 101,
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15",
+      "deviceMake": "Apple",
+      "deviceModel": "RealityDevice17,1",
+      "osName": "visionOS",
+      "osVersion": "26.5.23O471",
+      "requiresJS": false
+    },
+    "tv_samsung": {
+      "clientName": "TVHTML5",
+      "clientVersion": "5.20260707",
+      "clientId": 7,
+      "userAgent": "Mozilla/5.0 (SMART-TV; Linux; Tizen 2.4.0) AppleWebKit/538.1 (KHTML, like Gecko) Version/2.4.0 TV Safari/538.1",
+      "deviceMake": "Samsung",
+      "deviceModel": "UKS9800",
+      "osName": "Tizen",
+      "osVersion": "2.4.0",
+      "requiresJS": true
+    },
+    "ios_producer": {
+      "clientName": "IOS_PRODUCER",
+      "clientVersion": "0.147.945",
+      "clientId": 92,
+      "userAgent": "com.google.ios.youtubeproducer/0.147.945 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)",
+      "deviceMake": "Apple",
+      "deviceModel": "iPhone16,2",
+      "osName": "iPhone",
+      "osVersion": "18.3.2.22D82",
+      "requiresJS": false
+    }
+  }
+}

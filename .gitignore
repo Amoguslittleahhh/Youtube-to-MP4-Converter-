@@ -1,0 +1,10 @@
+.build/
+*.xcodeproj
+build/
+DerivedData/
+.swiftpm/
+fastlane/report.xml
+fastlane/README.md
+*.ipa
+*.dSYM.zip
+Gemfile.lock.bak
