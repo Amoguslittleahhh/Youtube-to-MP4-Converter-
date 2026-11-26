@@ -34,6 +34,9 @@ jobs:
       - name: Install XcodeGen
         run: command -v xcodegen || brew install xcodegen
 
+      - name: a-Shell script tests
+        run: python3 -m unittest ashell/test_ytmp4.py
+
       - name: Core tests (extractor, muxer, solver, transcoder)
         run: swift test --package-path Core
 
