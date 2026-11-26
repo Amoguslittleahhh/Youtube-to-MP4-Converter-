@@ -175,7 +175,9 @@ public enum MP4Writer {
         matrix(&tkhd); tkhd.u32(t.width); tkhd.u32(t.height)
         var trak = Bytes.fullBox("tkhd", version: 1, flags: 3, tkhd.d)
 
-        if t.startDelay > 0 || t.mediaTime != 0 {
+        // Always state the presented range when it differs from the media length (B-frames shift it),
+        // otherwise AVFoundation trims the last frames.
+        if t.startDelay > 0 || t.mediaTime != 0 || t.compositionEnd != Int64(t.mediaDuration) {
             var elst = Bytes()
             let entries: [(UInt64, Int64)] = (t.startDelay > 0 ? [(UInt64((t.startDelay * Double(movieTimescale)).rounded()), Int64(-1))] : [])
                 + [(UInt64((t.presentedSeconds * Double(movieTimescale)).rounded()), t.mediaTime)]
